@@ -1,6 +1,7 @@
 .venv/
 __pycache__/
 .ipynb_checkpoints/
-outputs/
-data/
 *.pyc
+
+# Ignorar arquivo comprimido maior que 100MB (restrição de upload do GitHub)
+data/cifar-10-python.tar.gz
