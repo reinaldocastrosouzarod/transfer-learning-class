@@ -5,6 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Transfer Learning — ENG4502 · PUC-Rio</title>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"><\/script>
   <style>
     /* ─── Reset & Base ─── */
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
@@ -953,9 +954,214 @@ criterion = nn.<span class="cls">CrossEntropyLoss</span>()</pre>
     </div>
   </section>
 
+  <!-- ══════════════════════════════════════════ -->
+  <!-- SLIDE 16 — RESULTADOS REAIS (GRÁFICO)     -->
+  <!-- ══════════════════════════════════════════ -->
+  <section class="slide" id="slide-chart">
+    <div class="slide-header">
+      <span class="tag green">Resultados</span>
+      <h2>O que esperar: curvas de treinamento</h2>
+    </div>
+
+    <p style="margin-bottom:20px;">Resultado típico de Feature Extraction com ResNet-18 em CIFAR-10 (5 épocas, batch=128, lr=0.01).</p>
+
+    <div class="two-col">
+      <div style="position:relative; height:280px;">
+        <canvas id="chartLoss"></canvas>
+      </div>
+      <div style="position:relative; height:280px;">
+        <canvas id="chartAcc"></canvas>
+      </div>
+    </div>
+
+    <div class="card-grid cols-3" style="margin-top:20px;">
+      <div class="metric-box">
+        <div class="metric-val" style="color:var(--green)">~75%</div>
+        <div class="metric-label">Acurácia final esperada<br>(Val, 5 épocas)</div>
+      </div>
+      <div class="metric-box">
+        <div class="metric-val" style="color:var(--orange)">~55%</div>
+        <div class="metric-label">CNN treinada do zero<br>(mesmas condições)</div>
+      </div>
+      <div class="metric-box">
+        <div class="metric-val" style="color:var(--purple)">+20pp</div>
+        <div class="metric-label">Ganho médio com<br>Transfer Learning</div>
+      </div>
+    </div>
+
+    <div class="slide-footer">
+      <span>Transfer Learning — ENG4502</span>
+      <span>Resultados</span>
+    </div>
+  </section>
+
+  <!-- ══════════════════════════════════════════ -->
+  <!-- SLIDE 17 — FINE-TUNING COMPARATIVO        -->
+  <!-- ══════════════════════════════════════════ -->
+  <section class="slide">
+    <div class="slide-header">
+      <span class="tag orange">Próximo nível</span>
+      <h2>Fine-Tuning: descongelando o backbone</h2>
+    </div>
+
+    <div class="two-col">
+      <div>
+        <p style="color:var(--text); margin-bottom:16px;">E se, além da camada final, treinarmos as <strong>últimas camadas convolucionais</strong>?</p>
+
+        <pre style="font-size:12px;"><span class="cmt"># Fine-Tuning parcial: descongela layer4 + fc</span>
+model = models.<span class="fn">resnet18</span>(weights=models.<span class="cls">ResNet18_Weights</span>.IMAGENET1K_V1)
+
+<span class="cmt"># Congela tudo primeiro</span>
+<span class="kw">for</span> p <span class="kw">in</span> model.<span class="fn">parameters</span>():
+    p.requires_grad = <span class="kw">False</span>
+
+<span class="cmt"># Descongela somente as últimas camadas</span>
+<span class="kw">for</span> p <span class="kw">in</span> model.layer4.<span class="fn">parameters</span>():
+    p.requires_grad = <span class="kw">True</span>   <span class="cmt"># ← diferença!</span>
+
+model.fc = nn.<span class="cls">Linear</span>(model.fc.in_features, <span class="num">10</span>)
+
+<span class="cmt"># lr menor para camadas descongeladas</span>
+optimizer = optim.<span class="cls">SGD</span>([
+    {<span class="str">'params'</span>: model.layer4.<span class="fn">parameters</span>(), <span class="str">'lr'</span>: <span class="num">1e-4</span>},
+    {<span class="str">'params'</span>: model.fc.<span class="fn">parameters</span>(),     <span class="str">'lr'</span>: <span class="num">1e-3</span>},
+], momentum=<span class="num">0.9</span>)</pre>
+      </div>
+
+      <div style="display:flex; flex-direction:column; gap:14px;">
+        <div class="card accent">
+          <h3 style="color:var(--accent); margin-bottom:8px;">🧊 Feature Extraction</h3>
+          <table style="font-size:13px;">
+            <tr><td style="color:var(--text-muted); padding:4px 0;">Params treináveis</td><td style="color:var(--text); padding-left:12px;"><strong>5.1K</strong></td></tr>
+            <tr><td style="color:var(--text-muted); padding:4px 0;">Acurácia típica</td><td style="color:var(--green); padding-left:12px;"><strong>~75%</strong></td></tr>
+            <tr><td style="color:var(--text-muted); padding:4px 0;">Tempo (5 épocas)</td><td style="color:var(--text); padding-left:12px;"><strong>~8 min</strong></td></tr>
+            <tr><td style="color:var(--text-muted); padding:4px 0;">Risco overfitting</td><td style="color:var(--green); padding-left:12px;"><strong>Baixo</strong></td></tr>
+          </table>
+        </div>
+        <div class="card orange">
+          <h3 style="color:var(--orange); margin-bottom:8px;">🔥 Fine-Tuning (layer4)</h3>
+          <table style="font-size:13px;">
+            <tr><td style="color:var(--text-muted); padding:4px 0;">Params treináveis</td><td style="color:var(--text); padding-left:12px;"><strong>~2.6M</strong></td></tr>
+            <tr><td style="color:var(--green); padding-left:12px; padding:4px 0;">Acurácia típica</td><td style="color:var(--green); padding-left:12px;"><strong>~82%</strong></td></tr>
+            <tr><td style="color:var(--text-muted); padding:4px 0;">Tempo (5 épocas)</td><td style="color:var(--orange); padding-left:12px;"><strong>~25 min</strong></td></tr>
+            <tr><td style="color:var(--text-muted); padding:4px 0;">Risco overfitting</td><td style="color:var(--orange); padding-left:12px;"><strong>Médio</strong></td></tr>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <div class="slide-footer">
+      <span>Transfer Learning — ENG4502</span>
+      <span>Fine-Tuning</span>
+    </div>
+  </section>
+
+  <!-- ══════════════════════════════════════════ -->
+  <!-- SLIDE 18 — NOTEBOOK 2: FINE-TUNING        -->
+  <!-- ══════════════════════════════════════════ -->
+  <section class="slide">
+    <div class="slide-header">
+      <span class="tag purple">Prática 2</span>
+      <h2>Notebook 2 — Fine-Tuning em CIFAR-10</h2>
+    </div>
+
+    <p style="margin-bottom:24px;">Notebook guiado para comparar <em>feature extraction</em> com <em>fine-tuning parcial</em>, analisando ganho de acurácia versus custo computacional.</p>
+
+    <ul class="list">
+      <li>
+        <span class="bullet">1</span>
+        <div>
+          <strong>Partir do modelo treinado</strong> — Carrega pesos da Prática 1 (ou re-inicializa com ImageNet). Garante ponto de comparação justo.
+        </div>
+      </li>
+      <li>
+        <span class="bullet">2</span>
+        <div>
+          <strong>Descongelar layer4</strong> — Apenas o último bloco residual do ResNet-18. Treinar com learning rate diferenciado (discriminative LR).
+        </div>
+      </li>
+      <li>
+        <span class="bullet green">3</span>
+        <div>
+          <strong>Comparar curvas</strong> — Plot lado a lado: loss e acurácia de Feature Extraction vs Fine-Tuning ao longo das épocas.
+        </div>
+      </li>
+      <li>
+        <span class="bullet orange">4</span>
+        <div>
+          <strong>Matriz de confusão comparativa</strong> — Quais classes melhoram com Fine-Tuning? Por quê?
+        </div>
+      </li>
+      <li>
+        <span class="bullet purple">5</span>
+        <div>
+          <strong>Discussão</strong> — Vale a pena o custo adicional? Em que cenários sim e em que cenários não?
+        </div>
+      </li>
+    </ul>
+
+    <div class="info-strip" style="margin-top:12px;">
+      📁 Arquivo: <code>notebooks/02_fine_tuning_cifar10.ipynb</code>
+    </div>
+
+    <div class="slide-footer">
+      <span>Transfer Learning — ENG4502</span>
+      <span>Prática 2 — Fine-Tuning</span>
+    </div>
+  </section>
+
 </div><!-- /deck -->
 
 <script>
+  // ── Chart data (typical ResNet-18 Feature Extraction on CIFAR-10) ────
+  const epochs   = [1, 2, 3, 4, 5];
+  const lossData = [1.82, 1.31, 1.05, 0.90, 0.82];
+  const accData  = [0.52, 0.63, 0.70, 0.73, 0.75];
+  const lossScratch = [2.30, 1.98, 1.74, 1.60, 1.51];
+  const accScratch  = [0.28, 0.38, 0.45, 0.50, 0.55];
+
+  const chartDefaults = {
+    responsive: true, maintainAspectRatio: false,
+    animation: { duration: 900, easing: 'easeInOutQuart' },
+    plugins: {
+      legend: { labels: { color: '#8b949e', font: { family: 'Inter', size: 12 } } }
+    },
+    scales: {
+      x: { ticks: { color: '#8b949e' }, grid: { color: '#21262d' } },
+      y: { ticks: { color: '#8b949e' }, grid: { color: '#21262d' } }
+    }
+  };
+
+  let chartsCreated = false;
+  function initCharts() {
+    if (chartsCreated) return;
+    chartsCreated = true;
+    new Chart(document.getElementById('chartLoss'), {
+      type: 'line',
+      data: {
+        labels: epochs.map(e => 'Época ' + e),
+        datasets: [
+          { label: 'Transfer Learning', data: lossData,   borderColor: '#58a6ff', backgroundColor: 'rgba(88,166,255,.1)', tension: 0.4, fill: true },
+          { label: 'Do zero (CNN)',     data: lossScratch, borderColor: '#f78166', backgroundColor: 'rgba(247,129,102,.1)', tension: 0.4, fill: true }
+        ]
+      },
+      options: { ...chartDefaults, plugins: { ...chartDefaults.plugins, title: { display: true, text: 'Curva de Loss (treino)', color: '#e6edf3', font: { size: 14, family: 'Inter' } } } }
+    });
+    new Chart(document.getElementById('chartAcc'), {
+      type: 'line',
+      data: {
+        labels: epochs.map(e => 'Época ' + e),
+        datasets: [
+          { label: 'Transfer Learning', data: accData,    borderColor: '#3fb950', backgroundColor: 'rgba(63,185,80,.1)', tension: 0.4, fill: true },
+          { label: 'Do zero (CNN)',     data: accScratch,  borderColor: '#e3b341', backgroundColor: 'rgba(227,179,65,.1)', tension: 0.4, fill: true }
+        ]
+      },
+      options: { ...chartDefaults, scales: { ...chartDefaults.scales, y: { ...chartDefaults.scales.y, min: 0, max: 1 } },
+        plugins: { ...chartDefaults.plugins, title: { display: true, text: 'Acurácia de Validação', color: '#e6edf3', font: { size: 14, family: 'Inter' } } } }
+    });
+  }
+
+  // ── Navigation ────────────────────────────────────────────────────────
   const slides = Array.from(document.querySelectorAll('.slide'));
   const total  = slides.length;
   let   cur    = 0;
@@ -973,6 +1179,8 @@ criterion = nn.<span class="cls">CrossEntropyLoss</span>()</pre>
     num.textContent  = (cur + 1) + ' / ' + total;
     btnP.disabled    = cur === 0;
     btnN.textContent = cur === total - 1 ? '✔ Fim' : 'Próximo →';
+    // Initialize charts when slide-chart becomes visible
+    if (slides[cur].id === 'slide-chart') setTimeout(initCharts, 50);
   }
 
   btnN.addEventListener('click', () => { if (cur < total - 1) show(cur + 1); });
