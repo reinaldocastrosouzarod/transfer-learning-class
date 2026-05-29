@@ -963,7 +963,7 @@ criterion = nn.<span class="cls">CrossEntropyLoss</span>()</pre>
       <h2>O que esperar: curvas de treinamento</h2>
     </div>
 
-    <p style="margin-bottom:20px;">Resultado típico de Feature Extraction com ResNet-18 em CIFAR-10 (5 épocas, batch=128, lr=0.01).</p>
+    <p style="margin-bottom:20px;">Resultados reais obtidos com ResNet-18 no subset balanceado do CIFAR-10 (5 épocas, CPU, n=5.000).</p>
 
     <div class="two-col">
       <div style="position:relative; height:280px;">
@@ -1113,12 +1113,14 @@ optimizer = optim.<span class="cls">SGD</span>([
 </div><!-- /deck -->
 
 <script>
-  // ── Chart data (typical ResNet-18 Feature Extraction on CIFAR-10) ────
-  const epochs   = [1, 2, 3, 4, 5];
-  const lossData = [1.1282, 0.6661, 0.6282, 0.5734, 0.5492];
-  const accData  = [0.7240, 0.7360, 0.7560, 0.7340, 0.7450];
+  // ── Chart data (ResNet-18 Benchmark on CIFAR-10) ────────────────────────
+  const epochs      = [1, 2, 3, 4, 5];
+  const lossData    = [1.1282, 0.6661, 0.6282, 0.5734, 0.5492];
+  const accData     = [0.7240, 0.7360, 0.7560, 0.7340, 0.7450];
   const lossScratch = [2.0210, 1.6629, 1.5229, 1.3871, 1.1587];
   const accScratch  = [0.3080, 0.3190, 0.3490, 0.4270, 0.3780];
+  const lossFT      = [1.4790, 0.5737, 0.3451, 0.2232, 0.1509];
+  const accFT       = [0.7480, 0.8410, 0.8640, 0.8720, 0.8790];
 
   const chartDefaults = {
     responsive: true, maintainAspectRatio: false,
@@ -1141,8 +1143,9 @@ optimizer = optim.<span class="cls">SGD</span>([
       data: {
         labels: epochs.map(e => 'Época ' + e),
         datasets: [
-          { label: 'Transfer Learning', data: lossData,   borderColor: '#58a6ff', backgroundColor: 'rgba(88,166,255,.1)', tension: 0.4, fill: true },
-          { label: 'Do zero (CNN)',     data: lossScratch, borderColor: '#f78166', backgroundColor: 'rgba(247,129,102,.1)', tension: 0.4, fill: true }
+          { label: 'Feature Extraction', data: lossData,    borderColor: '#58a6ff', backgroundColor: 'rgba(88,166,255,.05)', tension: 0.4, fill: true },
+          { label: 'Treinamento do Zero', data: lossScratch, borderColor: '#f78166', backgroundColor: 'rgba(247,129,102,.05)', tension: 0.4, fill: true },
+          { label: 'Fine-Tuning Completo', data: lossFT,      borderColor: '#bc8cff', backgroundColor: 'rgba(188,140,255,.05)', tension: 0.4, fill: true }
         ]
       },
       options: { ...chartDefaults, plugins: { ...chartDefaults.plugins, title: { display: true, text: 'Curva de Loss (treino)', color: '#e6edf3', font: { size: 14, family: 'Inter' } } } }
@@ -1152,8 +1155,9 @@ optimizer = optim.<span class="cls">SGD</span>([
       data: {
         labels: epochs.map(e => 'Época ' + e),
         datasets: [
-          { label: 'Transfer Learning', data: accData,    borderColor: '#3fb950', backgroundColor: 'rgba(63,185,80,.1)', tension: 0.4, fill: true },
-          { label: 'Do zero (CNN)',     data: accScratch,  borderColor: '#e3b341', backgroundColor: 'rgba(227,179,65,.1)', tension: 0.4, fill: true }
+          { label: 'Feature Extraction', data: accData,     borderColor: '#58a6ff', backgroundColor: 'rgba(88,166,255,.05)', tension: 0.4, fill: true },
+          { label: 'Treinamento do Zero', data: accScratch,  borderColor: '#f78166', backgroundColor: 'rgba(247,129,102,.05)', tension: 0.4, fill: true },
+          { label: 'Fine-Tuning Completo', data: accFT,       borderColor: '#bc8cff', backgroundColor: 'rgba(188,140,255,.05)', tension: 0.4, fill: true }
         ]
       },
       options: { ...chartDefaults, scales: { ...chartDefaults.scales, y: { ...chartDefaults.scales.y, min: 0, max: 1 } },

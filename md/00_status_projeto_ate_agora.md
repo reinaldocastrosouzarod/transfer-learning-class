@@ -12,7 +12,7 @@ Treinamento de uma arquitetura **ResNet-18** em um subset balanceado de **5.000 
 | :--- | :--- | :---: | :---: | :---: | :--- |
 | **Feature Extraction** | Transfer Learning | 5 | **74.5%** | **13.1 min** | Acurácia inicial estável em 72.4% na Época 1. |
 | **Treinamento do Zero** | Pesos Aleatórios | 5 | **37.8%** | **25.9 min** | Começou em 30.8%. Demonstrou instabilidade na época 5 (overfitting/ruído). |
-| **Fine-Tuning** | Ajuste Fino Geral | 5 | *Em andamento* | *Executando* | Rodando com taxa de aprendizado menor (lr=0.001). |
+| **Fine-Tuning** | Ajuste Fino Geral | 5 | **87.9%** | **26.4 min** | Treinado com taxa de aprendizado menor (lr=0.001). Desempenho superior. |
 
 ## Arquivos Existentes no Projeto
 

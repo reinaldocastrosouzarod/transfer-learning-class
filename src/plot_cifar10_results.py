@@ -15,10 +15,9 @@ fe_acc  = [0.7240, 0.7360, 0.7560, 0.7340, 0.7450]
 scratch_loss = [2.0210, 1.6629, 1.5229, 1.3871, 1.1587]
 scratch_acc  = [0.3080, 0.3190, 0.3490, 0.4270, 0.3780]
 
-# 3. Fine-Tuning (ResNet-18 Parâmetros Livres) - Val Acc final: A ser preenchido
-# (Inicializado com dados parciais, será atualizado ao fim do treino em background)
-ft_loss = [1.4790, 0.8123, 0.7200, 0.6500, 0.5900]
-ft_acc  = [0.7480, 0.7600, 0.7750, 0.7900, 0.8100]
+# 3. Fine-Tuning (ResNet-18 Parâmetros Livres) - Val Acc final: 87.9%
+ft_loss = [1.4790, 0.5737, 0.3451, 0.2232, 0.1509]
+ft_acc  = [0.7480, 0.8410, 0.8640, 0.8720, 0.8790]
 
 # ── Configurações de Estilo (Dark Mode Elegante - Padrão PUC) ──────────────
 plt.style.use('dark_background')
@@ -44,8 +43,8 @@ ax1.set_ylabel('Loss', fontsize=12, color='#8b949e')
 ax1.legend(facecolor='#21262d', edgecolor='#30363d', labelcolor='#e6edf3')
 
 # ── Plot de Acurácia ───────────────────────────────────────────────────────
-ax2.plot(epochs, [x * 100 for x in fe_acc], 'o-', color='#3fb950', linewidth=2.5, markersize=8, label='Feature Extraction (ResNet-18)')
-ax2.plot(epochs, [x * 100 for x in scratch_acc], 's-', color='#e3b341', linewidth=2.5, markersize=8, label='Treinamento do Zero (ResNet-18)')
+ax2.plot(epochs, [x * 100 for x in fe_acc], 'o-', color='#58a6ff', linewidth=2.5, markersize=8, label='Feature Extraction (ResNet-18)')
+ax2.plot(epochs, [x * 100 for x in scratch_acc], 's-', color='#f78166', linewidth=2.5, markersize=8, label='Treinamento do Zero (ResNet-18)')
 ax2.plot(epochs, [x * 100 for x in ft_acc], '^-', color='#bc8cff', linewidth=2.5, markersize=8, label='Fine-Tuning Completo (ResNet-18)')
 ax2.set_title('Acurácia de Validação por Época', fontsize=14, fontweight='bold', color='#e6edf3', pad=15)
 ax2.set_xlabel('Época', fontsize=12, color='#8b949e')
@@ -58,4 +57,4 @@ plt.tight_layout()
 # Salvar gráfico comparativo
 output_path = "outputs/comparativo_cifar10.png"
 plt.savefig(output_path, dpi=150, facecolor='#0d1117')
-print(f"✔ Gráfico salvo com sucesso em: {output_path}")
+print(f"Grafico salvo com sucesso em: {output_path}")
