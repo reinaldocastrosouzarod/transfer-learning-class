@@ -209,3 +209,27 @@ Ao implementar redes convolucionais profundas com PyTorch, é comum encontrar al
            for inputs, labels in val_loader:
                outputs = model(inputs)
        ```
+
+---
+
+## 9. Dever de Casa Prático (Homework)
+
+Para consolidar os conceitos discutidos em aula, você deve implementar uma atividade prática para entrega individual.
+
+### 📝 Descrição da Atividade
+Você investigará o impacto do **Data Augmentation** no treinamento do zero e implementará um **Fine-Tuning Parcial** (ajuste fino apenas das camadas profundas do backbone convolucional `model.layer4` e classificador `model.fc`) utilizando **Taxas de Aprendizado Discriminativas**.
+
+### 📂 Documentos e Recursos Necessários:
+1. **Guia de Apoio**: Este documento ([guia_estudante.md](file:///C:/Users/rodri/gemini-sandbox/transfer-learning-class/md/guia_estudante.md)) com as taxonomias de Transfer Learning e o guia de sobrevivência contra bugs.
+2. **Notebook de Partida (Template Aluno)**: O arquivo template [03_homework_transfer_learning_student.ipynb](file:///C:/Users/rodri/gemini-sandbox/transfer-learning-class/homework/student/03_homework_transfer_learning_student.ipynb) contém o esqueleto estrutural da prática com as marcações `### SEU CÓDIGO AQUI ###` prontas para preenchimento.
+
+### 📦 Base de Dados Disponível:
+O dataset já está baixado e preparado no repositório. O notebook carregará diretamente a pasta:
+- `data/cifar-10-batches-py` (armazenada em [data/](file:///C:/Users/rodri/gemini-sandbox/transfer-learning-class/data)). Não há necessidade de baixar arquivos adicionais, o DataLoader acessará o diretório local.
+
+### 🎯 Tarefas a Executar:
+1. **Exercício 1**: Implementar Data Augmentation (Inversão Horizontal Aleatória e Rotação de 15°) no pipeline de transformações de treino do CIFAR-10.
+2. **Exercício 2**: Treinar a ResNet-18 do zero (Scratch) com os dados regularizados e comparar a acurácia de validação obtida em relação ao modelo do zero básico de aula (37.8%).
+3. **Exercício 3**: Configurar a ResNet-18 pré-treinada para Fine-Tuning Parcial, congelando todo o backbone convolucional, e em seguida descongelando explicitamente apenas o bloco `model.layer4`.
+4. **Exercício 4**: Criar o otimizador SGD configurado com taxas de aprendizado discriminativas (`lr = 0.0001` para o `layer4` e `lr = 0.001` para o `fc`).
+5. **Relatório**: Responder às duas perguntas teóricas de discussão ao final do notebook sobre o comportamento da regularização e o tradeoff de treinar apenas o `layer4`.
