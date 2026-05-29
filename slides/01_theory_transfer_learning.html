@@ -1,0 +1,84 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>Transfer Learning – 1ª hora</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <!-- Reveal.js CDN -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/reveal.js/4.5.0/reveal.min.css" integrity="sha512-8vY5p1E0RZJw2+qFvYw8j2J9R4v0dVgVQK8pO2vM+g4hVbV1K9O8jYcXfZcH3bM4E9hXqk2cG8gZJ+2Vf3dYg==" crossorigin="anonymous" referrerpolicy="no-referrer" />
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/reveal.js/4.5.0/theme/black.min.css" integrity="sha512-mZcWvIYc+JHhJfB6+L+9g3iA6cGgYcN6lG1pTgZg+4X+vK8hH6JfXgL9Yf+V0lA8J6eX+1t3YBzv9eF2kL5cA==" crossorigin="anonymous" referrerpolicy="no-referrer" />
+</head>
+<body>
+<div class="reveal">
+  <div class="slides">
+    <section>
+      <h2>Transfer Learning – Conceitos e Motivação</h2>
+      <p><strong>Objetivo da aula:</strong> entender o que é transfer learning e como usá‑lo em prática.</p>
+    </section>
+    <section>
+      <h2>Definição</h2>
+      <ul>
+        <li><em>Transfer Learning</em> = reutilização de conhecimento já aprendido por um modelo pré‑treinado para resolver outra tarefa.</li>
+        <li>Diferenças entre <strong>fine‑tuning</strong> e <strong>feature‑extraction</strong>.</li>
+      </ul>
+    </section>
+    <section>
+      <h2>Por que usar?</h2>
+      <ul>
+        <li>Reduz custo computacional.</li>
+        <li>Menos dados rotulados necessários.</li>
+        <li>Melhora a performance em domínios similares.</li>
+      </ul>
+    </section>
+    <section>
+      <h2>Pipeline típico</h2>
+      <ol>
+        <li>Escolher modelo pré‑treinado (ex.: ResNet‑18).</li>
+        <li>Congelar camadas (feature‑extraction) ou treinar tudo (fine‑tuning).</li>
+        <li>Substituir a camada final para o número de classes da nova tarefa.</li>
+        <li>Treinar / validar.</li>
+      </ol>
+    </section>
+    <section>
+      <h2>Exemplo prático – CIFAR‑10</h2>
+      <ul>
+        <li>Dataset: CIFAR‑10 (10 classes, imagens 32×32).</li>
+        <li>Modelo: ResNet‑18 pré‑treinado em ImageNet.</li>
+        <li>Estrategia: <strong>feature‑extraction</strong> (congelar todas as camadas exceto a última).</li>
+        <li>Tempo estimado: &lt; 10 min em CPU/GPU.</li>
+      </ul>
+    </section>
+    <section>
+      <h2>Métricas de avaliação</h2>
+      <ul>
+        <li>Acurácia, <strong>Top‑1</strong> e <strong>Top‑5</strong>.</li>
+        <li>Matriz de confusão.</li>
+      </ul>
+    </section>
+    <section>
+      <h2>Perguntas para a turma</h2>
+      <ul>
+        <li>Quando o fine‑tuning pode ser mais vantajoso que feature‑extraction?</li>
+        <li>Quais são os riscos de usar modelos pré‑treinados em domínios muito diferentes?</li>
+      </ul>
+    </section>
+    <section>
+      <h2>Referências</h2>
+      <ul>
+        <li>Wang, Y., &amp; Chen, X. (2023). <em>Introduction to Transfer Learning: Algorithms and Practice</em>.</li>
+        <li>PyTorch Documentation – Transfer Learning tutorials.</li>
+      </ul>
+    </section>
+  </div>
+</div>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/reveal.js/4.5.0/reveal.min.js" integrity="sha512-6hF2qKZ+9Qp6e6Y1kZ2H5vY3bN0F7g3E9rK5cG4L8hDqK2eV6z5M9cZt7K8L9M0T3nF4J2E9bU1vY3R4S5W6Z==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+<script>
+  Reveal.initialize({
+    hash: true,
+    slideNumber: true,
+    // optional plugins
+    plugins: []
+  });
+</script>
+</body>
+</html>

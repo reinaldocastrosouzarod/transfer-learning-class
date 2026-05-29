@@ -67,13 +67,17 @@ def evaluate(model, loader, device):
 # -------------------
 # Treinamento
 # -------------------
-num_epochs = 5
-for epoch in range(num_epochs):
-    loss = train_one_epoch(model, train_loader, criterion, optimizer, device)
-    acc  = evaluate(model, val_loader, device)
-    print(f'Epoch {epoch+1}/{num_epochs} – Loss: {loss:.4f} – Val Acc: {acc:.4f}')
+def main():
+    num_epochs = 5
+    for epoch in range(num_epochs):
+        loss = train_one_epoch(model, train_loader, criterion, optimizer, device)
+        acc  = evaluate(model, val_loader, device)
+        print(f'Epoch {epoch+1}/{num_epochs} – Loss: {loss:.4f} – Val Acc: {acc:.4f}')
 
-# --------------------------------
-# Dicas para o estudante (tempo < 10 min)
-# --------------------------------
-print('\nTreinamento concluído. Use a função `evaluate` para testar em novos dados.')
+    # --------------------------------
+    # Dicas para o estudante (tempo < 10 min)
+    # --------------------------------
+    print('\nTreinamento concluído. Use a função `evaluate` para testar em novos dados.')
+
+if __name__ == "__main__":
+    main()

@@ -1,0 +1,989 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Transfer Learning — ENG4502 · PUC-Rio</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <style>
+    /* ─── Reset & Base ─── */
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg:        #0d1117;
+      --surface:   #161b22;
+      --card:      #21262d;
+      --border:    #30363d;
+      --accent:    #58a6ff;
+      --green:     #3fb950;
+      --orange:    #f78166;
+      --purple:    #bc8cff;
+      --yellow:    #e3b341;
+      --text:      #e6edf3;
+      --text-muted:#8b949e;
+      --radius:    12px;
+    }
+
+    html, body { width: 100%; height: 100%; overflow: hidden; background: var(--bg); }
+
+    /* ─── Slide Container ─── */
+    .deck {
+      width: 100vw; height: 100vh;
+      position: relative;
+      font-family: 'Inter', sans-serif;
+      color: var(--text);
+    }
+
+    .slide {
+      position: absolute; inset: 0;
+      display: none;
+      flex-direction: column;
+      padding: 60px 80px;
+      animation: fadeIn .35s ease;
+    }
+    .slide.active { display: flex; }
+
+    @keyframes fadeIn { from { opacity: 0; transform: translateY(14px); } to { opacity: 1; transform: translateY(0); } }
+
+    /* ─── Progress Bar ─── */
+    #progress-bar {
+      position: fixed; top: 0; left: 0; height: 3px;
+      background: linear-gradient(90deg, var(--accent), var(--purple));
+      transition: width .3s ease;
+      z-index: 100;
+    }
+
+    /* ─── Slide Number ─── */
+    #slide-num {
+      position: fixed; bottom: 28px; right: 36px;
+      font-size: 13px; color: var(--text-muted);
+      font-variant-numeric: tabular-nums;
+      z-index: 100;
+    }
+
+    /* ─── Navigation Buttons ─── */
+    .nav-btn {
+      position: fixed; bottom: 20px;
+      background: var(--surface); border: 1px solid var(--border);
+      color: var(--text); border-radius: 8px;
+      padding: 8px 20px; font-size: 14px; cursor: pointer;
+      transition: all .2s; font-family: 'Inter', sans-serif;
+      z-index: 100;
+    }
+    .nav-btn:hover { background: var(--card); border-color: var(--accent); color: var(--accent); }
+    #btn-prev { left: 36px; }
+    #btn-next { left: 110px; }
+
+    /* ─── Shared Layout ─── */
+    .slide-header {
+      display: flex; align-items: center; gap: 12px;
+      margin-bottom: 36px;
+    }
+    .tag {
+      font-size: 11px; font-weight: 600; letter-spacing: .08em; text-transform: uppercase;
+      padding: 4px 10px; border-radius: 20px;
+      background: rgba(88,166,255,.15); color: var(--accent); border: 1px solid rgba(88,166,255,.3);
+    }
+    .tag.green  { background: rgba(63,185,80,.15);  color: var(--green);  border-color: rgba(63,185,80,.3);  }
+    .tag.orange { background: rgba(247,129,102,.15); color: var(--orange); border-color: rgba(247,129,102,.3); }
+    .tag.purple { background: rgba(188,140,255,.15); color: var(--purple); border-color: rgba(188,140,255,.3); }
+    .tag.yellow { background: rgba(227,179,65,.15);  color: var(--yellow); border-color: rgba(227,179,65,.3); }
+
+    h1 { font-size: clamp(28px,3.5vw,48px); font-weight: 800; line-height: 1.15; }
+    h2 { font-size: clamp(22px,2.5vw,36px); font-weight: 700; line-height: 1.2; }
+    h3 { font-size: clamp(15px,1.6vw,22px); font-weight: 600; }
+    p  { font-size: clamp(14px,1.4vw,18px); line-height: 1.7; color: var(--text-muted); }
+
+    /* ─── Cards ─── */
+    .card-grid {
+      display: grid; gap: 20px;
+      flex: 1; align-content: start;
+    }
+    .card-grid.cols-2 { grid-template-columns: 1fr 1fr; }
+    .card-grid.cols-3 { grid-template-columns: 1fr 1fr 1fr; }
+
+    .card {
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: var(--radius); padding: 24px 28px;
+      transition: border-color .2s;
+    }
+    .card:hover { border-color: var(--accent); }
+    .card .card-icon { font-size: 28px; margin-bottom: 12px; }
+    .card h3 { color: var(--text); margin-bottom: 8px; }
+    .card p  { font-size: 14px; }
+
+    .card.accent { border-color: rgba(88,166,255,.4); background: rgba(88,166,255,.05); }
+    .card.green  { border-color: rgba(63,185,80,.4);  background: rgba(63,185,80,.05);  }
+    .card.orange { border-color: rgba(247,129,102,.4);background: rgba(247,129,102,.05);}
+    .card.purple { border-color: rgba(188,140,255,.4); background: rgba(188,140,255,.05);}
+
+    /* ─── Lists ─── */
+    .list { list-style: none; display: flex; flex-direction: column; gap: 14px; }
+    .list li {
+      display: flex; align-items: flex-start; gap: 14px;
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: 10px; padding: 16px 20px;
+      font-size: clamp(13px, 1.3vw, 17px); line-height: 1.6;
+    }
+    .list li .bullet {
+      min-width: 28px; height: 28px; border-radius: 50%;
+      background: rgba(88,166,255,.15); color: var(--accent);
+      display: flex; align-items: center; justify-content: center;
+      font-weight: 700; font-size: 13px; flex-shrink: 0;
+    }
+    .list li .bullet.green  { background: rgba(63,185,80,.15);  color: var(--green);  }
+    .list li .bullet.orange { background: rgba(247,129,102,.15); color: var(--orange); }
+    .list li .bullet.purple { background: rgba(188,140,255,.15); color: var(--purple); }
+    .list li .bullet.yellow { background: rgba(227,179,65,.15);  color: var(--yellow); }
+
+    /* ─── Code Block ─── */
+    pre {
+      background: #0d1117; border: 1px solid var(--border);
+      border-radius: var(--radius); padding: 22px 26px;
+      overflow-x: auto; font-family: 'JetBrains Mono', monospace;
+      font-size: clamp(11px, 1.1vw, 14px); line-height: 1.75;
+    }
+    .kw   { color: #ff7b72; }   /* keywords */
+    .fn   { color: #d2a8ff; }   /* functions */
+    .str  { color: #a5d6ff; }   /* strings */
+    .cmt  { color: #8b949e; font-style: italic; }  /* comments */
+    .num  { color: #79c0ff; }   /* numbers */
+    .cls  { color: #ffa657; }   /* classes */
+
+    /* ─── Comparison Table ─── */
+    table {
+      width: 100%; border-collapse: collapse;
+      font-size: clamp(12px, 1.2vw, 15px);
+    }
+    thead th {
+      background: var(--card); color: var(--accent);
+      padding: 12px 18px; text-align: left; font-weight: 600;
+      border-bottom: 2px solid var(--border);
+    }
+    tbody td {
+      padding: 12px 18px; border-bottom: 1px solid var(--border);
+      color: var(--text-muted); vertical-align: top;
+    }
+    tbody tr:last-child td { border-bottom: none; }
+    tbody tr:hover td { background: rgba(88,166,255,.04); }
+    .good { color: var(--green); font-weight: 600; }
+    .bad  { color: var(--orange); font-weight: 600; }
+
+    /* ─── Pipeline Steps ─── */
+    .pipeline {
+      display: flex; align-items: center; gap: 0;
+      flex: 1; justify-content: center;
+    }
+    .step {
+      display: flex; flex-direction: column; align-items: center;
+      gap: 10px; flex: 1;
+    }
+    .step-box {
+      width: 100%; max-width: 160px; padding: 18px 12px;
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: var(--radius); text-align: center;
+      font-size: clamp(11px, 1.1vw, 14px); font-weight: 500;
+      transition: border-color .2s;
+    }
+    .step-box:hover { border-color: var(--accent); }
+    .step-box .step-icon { font-size: 22px; margin-bottom: 6px; }
+    .step-arrow {
+      color: var(--text-muted); font-size: 20px; flex-shrink: 0; padding: 0 4px;
+    }
+
+    /* ─── Quote Block ─── */
+    .quote-block {
+      background: rgba(88,166,255,.07); border-left: 4px solid var(--accent);
+      border-radius: 0 var(--radius) var(--radius) 0;
+      padding: 20px 28px; margin: 16px 0;
+    }
+    .quote-block p { color: var(--text); font-size: clamp(14px,1.5vw,20px); font-style: italic; }
+    .quote-block .source { margin-top: 10px; font-size: 13px; color: var(--text-muted); font-style: normal; }
+
+    /* ─── Title Slide ─── */
+    .title-slide {
+      background: radial-gradient(ellipse at 30% 50%, rgba(88,166,255,.08) 0%, transparent 60%),
+                  radial-gradient(ellipse at 80% 20%, rgba(188,140,255,.06) 0%, transparent 50%),
+                  var(--bg);
+      justify-content: center; gap: 32px;
+    }
+    .title-meta { display: flex; gap: 12px; flex-wrap: wrap; }
+
+    /* ─── Two-column layout ─── */
+    .two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 32px; flex: 1; }
+    .two-col.left-wide { grid-template-columns: 3fr 2fr; }
+
+    /* ─── Highlight badge ─── */
+    .badge {
+      display: inline-block; padding: 2px 10px; border-radius: 20px;
+      font-size: 12px; font-weight: 600; vertical-align: middle;
+    }
+    .badge.blue   { background: rgba(88,166,255,.2); color: var(--accent); }
+    .badge.green  { background: rgba(63,185,80,.2);  color: var(--green);  }
+    .badge.orange { background: rgba(247,129,102,.2);color: var(--orange); }
+
+    /* ─── Metric box ─── */
+    .metric-box {
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: var(--radius); padding: 20px;
+      text-align: center;
+    }
+    .metric-box .metric-val {
+      font-size: clamp(28px,4vw,52px); font-weight: 800; color: var(--accent);
+      line-height: 1;
+    }
+    .metric-box .metric-label {
+      font-size: 13px; color: var(--text-muted); margin-top: 6px;
+    }
+
+    /* ─── Spacer ─── */
+    .spacer { flex: 1; }
+
+    /* ─── Footer ─── */
+    .slide-footer {
+      margin-top: auto; padding-top: 20px;
+      border-top: 1px solid var(--border);
+      display: flex; justify-content: space-between; align-items: center;
+      font-size: 12px; color: var(--text-muted);
+    }
+
+    /* ─── Divider ─── */
+    hr.divider {
+      border: none; border-top: 1px solid var(--border); margin: 16px 0;
+    }
+
+    /* ─── Full-width info strip ─── */
+    .info-strip {
+      background: rgba(227,179,65,.08); border: 1px solid rgba(227,179,65,.3);
+      border-radius: var(--radius); padding: 14px 22px;
+      display: flex; align-items: center; gap: 12px;
+      font-size: 14px; color: var(--yellow);
+    }
+
+  </style>
+</head>
+<body>
+
+<div id="progress-bar"></div>
+<div id="slide-num"></div>
+
+<button class="nav-btn" id="btn-prev">← Anterior</button>
+<button class="nav-btn" id="btn-next">Próximo →</button>
+
+<div class="deck" id="deck">
+
+  <!-- ══════════════════════════════════════════ -->
+  <!-- SLIDE 1 — CAPA                            -->
+  <!-- ══════════════════════════════════════════ -->
+  <section class="slide title-slide active">
+    <div class="title-meta">
+      <span class="tag">ENG4502 — Introdução à Ciência de Dados</span>
+      <span class="tag purple">PUC-Rio · 4° Período</span>
+    </div>
+
+    <div>
+      <h1 style="font-size:clamp(34px,5vw,64px); background: linear-gradient(135deg,#e6edf3,#58a6ff); -webkit-background-clip:text; -webkit-text-fill-color:transparent;">
+        Transfer Learning
+      </h1>
+      <p style="font-size:clamp(16px,2vw,26px); margin-top:12px; color:var(--text-muted);">
+        Reutilizando conhecimento para aprender mais rápido
+      </p>
+    </div>
+
+    <div class="card-grid cols-3" style="max-width:700px;">
+      <div class="card">
+        <div class="card-icon">📖</div>
+        <h3 style="font-size:13px;">Livro base</h3>
+        <p>Wang &amp; Chen, <em>Introduction to Transfer Learning</em>, 2023</p>
+      </div>
+      <div class="card">
+        <div class="card-icon">⏱️</div>
+        <h3 style="font-size:13px;">Duração</h3>
+        <p>2 horas (teoria + prática)</p>
+      </div>
+      <div class="card">
+        <div class="card-icon">🧪</div>
+        <h3 style="font-size:13px;">Prática</h3>
+        <p>CIFAR-10 com ResNet-18 (PyTorch)</p>
+      </div>
+    </div>
+
+    <div class="slide-footer">
+      <span>Alimed Celecia · Álvaro Veiga · Fernanda Baião · Patrick Happ</span>
+      <span>2025/2</span>
+    </div>
+  </section>
+
+  <!-- ══════════════════════════════════════════ -->
+  <!-- SLIDE 2 — OBJETIVOS DA AULA               -->
+  <!-- ══════════════════════════════════════════ -->
+  <section class="slide">
+    <div class="slide-header">
+      <span class="tag green">Objetivos</span>
+      <h2>O que você vai aprender hoje</h2>
+    </div>
+
+    <ul class="list">
+      <li>
+        <span class="bullet">1</span>
+        <div>
+          <strong>Conceito</strong> — Entender o que é Transfer Learning e por que ele mudou o estado da arte em IA.
+        </div>
+      </li>
+      <li>
+        <span class="bullet">2</span>
+        <div>
+          <strong>Estratégias</strong> — Diferenciar <em>feature extraction</em> de <em>fine-tuning</em> e saber quando usar cada um.
+        </div>
+      </li>
+      <li>
+        <span class="bullet green">3</span>
+        <div>
+          <strong>Pipeline</strong> — Percorrer as etapas completas: dados → modelo pré-treinado → adaptação → avaliação.
+        </div>
+      </li>
+      <li>
+        <span class="bullet orange">4</span>
+        <div>
+          <strong>Prática</strong> — Implementar um classificador de imagens (CIFAR-10) usando ResNet-18 em PyTorch em menos de 10 min de treino.
+        </div>
+      </li>
+      <li>
+        <span class="bullet purple">5</span>
+        <div>
+          <strong>Métricas</strong> — Avaliar o modelo com acurácia, matriz de confusão e curva de loss — usando o framework já visto em ICD-04.
+        </div>
+      </li>
+    </ul>
+
+    <div class="slide-footer">
+      <span>Transfer Learning — ENG4502</span>
+      <span>Objetivos</span>
+    </div>
+  </section>
+
+  <!-- ══════════════════════════════════════════ -->
+  <!-- SLIDE 3 — CONTEXTUALIZAÇÃO (relembrar ICD)-->
+  <!-- ══════════════════════════════════════════ -->
+  <section class="slide">
+    <div class="slide-header">
+      <span class="tag yellow">Lembrando…</span>
+      <h2>Ciclo de vida de Ciência de Dados</h2>
+    </div>
+
+    <p style="margin-bottom:28px;">Você já viu isso em ICD-02. Agora vamos ver <strong>onde o Transfer Learning se encaixa</strong> nesse ciclo.</p>
+
+    <div class="pipeline">
+      <div class="step">
+        <div class="step-box">
+          <div class="step-icon">🗂️</div>
+          Problema<br>definido
+        </div>
+      </div>
+      <div class="step-arrow">→</div>
+      <div class="step">
+        <div class="step-box">
+          <div class="step-icon">🔧</div>
+          Pré-processamento<br>de Dados
+        </div>
+      </div>
+      <div class="step-arrow">→</div>
+      <div class="step">
+        <div class="step-box" style="border-color: var(--accent); background: rgba(88,166,255,.08);">
+          <div class="step-icon">🤖</div>
+          <span style="color:var(--accent);">Mineração de Dados</span><br>
+          <span style="font-size:11px; color:var(--accent);">(Transfer Learning aqui!)</span>
+        </div>
+      </div>
+      <div class="step-arrow">→</div>
+      <div class="step">
+        <div class="step-box">
+          <div class="step-icon">📊</div>
+          Pós-processamento<br>Avaliação de Métricas
+        </div>
+      </div>
+    </div>
+
+    <div class="info-strip" style="margin-top:28px;">
+      ⚡ Transfer Learning é uma técnica de <strong>Mineração de Dados</strong> — ela acontece na etapa de aprendizado do modelo, substituindo o treinamento do zero por um aproveitamento de pesos já treinados.
+    </div>
+
+    <div class="slide-footer">
+      <span>Transfer Learning — ENG4502</span>
+      <span>Contextualização</span>
+    </div>
+  </section>
+
+  <!-- ══════════════════════════════════════════ -->
+  <!-- SLIDE 4 — DEFINIÇÃO FORMAL                -->
+  <!-- ══════════════════════════════════════════ -->
+  <section class="slide">
+    <div class="slide-header">
+      <span class="tag">Conceito</span>
+      <h2>O que é Transfer Learning?</h2>
+    </div>
+
+    <div class="quote-block">
+      <p>"Transfer Learning consiste em aproveitar o conhecimento adquirido por um modelo em uma tarefa <em>fonte</em> (source) para melhorar o aprendizado em uma tarefa <em>alvo</em> (target), especialmente quando os dados rotulados da tarefa alvo são escassos."</p>
+      <div class="source">— Wang &amp; Chen (2023), <em>Introduction to Transfer Learning: Algorithms and Practice</em>, §1.2</div>
+    </div>
+
+    <div class="card-grid cols-2" style="margin-top:24px;">
+      <div class="card">
+        <h3 style="color:var(--accent);">🎯 Tarefa Fonte (Source)</h3>
+        <hr class="divider">
+        <p>Modelo treinado em grande base de dados. Ex.: ResNet-18 treinado em <strong>ImageNet</strong> (1,2 milhão de imagens, 1000 classes).</p>
+      </div>
+      <div class="card">
+        <h3 style="color:var(--green);">🎯 Tarefa Alvo (Target)</h3>
+        <hr class="divider">
+        <p>Problema que queremos resolver com <strong>poucos dados</strong>. Ex.: classificar imagens de CIFAR-10 (10 classes, 50k imagens).</p>
+      </div>
+    </div>
+
+    <div class="slide-footer">
+      <span>Transfer Learning — ENG4502</span>
+      <span>Definição</span>
+    </div>
+  </section>
+
+  <!-- ══════════════════════════════════════════ -->
+  <!-- SLIDE 5 — ANALOGIA DO MUNDO REAL          -->
+  <!-- ══════════════════════════════════════════ -->
+  <section class="slide">
+    <div class="slide-header">
+      <span class="tag orange">Intuição</span>
+      <h2>Por que funciona? Uma analogia</h2>
+    </div>
+
+    <div class="two-col">
+      <div>
+        <p style="color:var(--text); font-size:clamp(14px,1.5vw,18px); margin-bottom:20px;">
+          Você já aprendeu a andar de bicicleta. Quando você tenta andar de moto pela primeira vez, <strong>não começa do zero</strong> — você já sabe o que é equilíbrio, como virar, como travar.
+        </p>
+        <p style="font-size:clamp(13px,1.3vw,16px);">
+          Em visão computacional funciona igual: um modelo que aprendeu a detectar bordas, texturas e formas em ImageNet <strong>já sabe "ver"</strong>. Basta ensinar o que são as suas novas classes.
+        </p>
+        <div class="info-strip" style="margin-top:20px; font-size:13px;">
+          💡 As camadas convolucionais iniciais aprendem detectores genéricos (bordas, cores, gradientes) que são úteis em <em>qualquer</em> tarefa de visão.
+        </div>
+      </div>
+      <div style="display:flex; flex-direction:column; gap:16px;">
+        <div class="card green">
+          <div class="card-icon">🚲</div>
+          <h3>Bicicleta = ImageNet</h3>
+          <p>Habilidade genérica aprendida com muitos dados e esforço.</p>
+        </div>
+        <div class="card accent">
+          <div class="card-icon">🏍️</div>
+          <h3>Moto = CIFAR-10</h3>
+          <p>Nova tarefa aprendida rapidamente aproveitando o conhecimento anterior.</p>
+        </div>
+      </div>
+    </div>
+
+    <div class="slide-footer">
+      <span>Transfer Learning — ENG4502</span>
+      <span>Intuição</span>
+    </div>
+  </section>
+
+  <!-- ══════════════════════════════════════════ -->
+  <!-- SLIDE 6 — DUAS ESTRATÉGIAS PRINCIPAIS     -->
+  <!-- ══════════════════════════════════════════ -->
+  <section class="slide">
+    <div class="slide-header">
+      <span class="tag purple">Estratégias</span>
+      <h2>Feature Extraction vs. Fine-Tuning</h2>
+    </div>
+
+    <div class="card-grid cols-2" style="margin-bottom:24px;">
+      <div class="card accent" style="padding:28px;">
+        <div class="card-icon">🧊 Feature Extraction</div>
+        <hr class="divider">
+        <ul style="list-style:none; display:flex; flex-direction:column; gap:10px; font-size:14px; color:var(--text-muted);">
+          <li>✅ Congela <strong>todas</strong> as camadas do backbone</li>
+          <li>✅ Treina <strong>apenas a camada final</strong> (classificador)</li>
+          <li>✅ Muito rápido — poucos parâmetros para atualizar</li>
+          <li>✅ Ideal quando há <strong>poucos dados</strong> na tarefa alvo</li>
+          <li>⚠️ Menos flexível — features fixas do domínio fonte</li>
+        </ul>
+      </div>
+      <div class="card orange" style="padding:28px;">
+        <div class="card-icon">🔥 Fine-Tuning</div>
+        <hr class="divider">
+        <ul style="list-style:none; display:flex; flex-direction:column; gap:10px; font-size:14px; color:var(--text-muted);">
+          <li>✅ Descongela parte (ou todas) as camadas</li>
+          <li>✅ Adapta as features ao domínio alvo</li>
+          <li>✅ Melhor performance quando há <strong>dados suficientes</strong></li>
+          <li>⚠️ Mais lento — muitos parâmetros para atualizar</li>
+          <li>⚠️ Risco de <strong>overfitting</strong> com datasets pequenos</li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="info-strip">
+      📌 <strong>Na prática de hoje</strong> usaremos <strong>Feature Extraction</strong> — mais simples, mais rápido, e já demonstra ganhos expressivos de acurácia.
+    </div>
+
+    <div class="slide-footer">
+      <span>Transfer Learning — ENG4502</span>
+      <span>Estratégias</span>
+    </div>
+  </section>
+
+  <!-- ══════════════════════════════════════════ -->
+  <!-- SLIDE 7 — COMPARAÇÃO (TABELA DO LIVRO)    -->
+  <!-- ══════════════════════════════════════════ -->
+  <section class="slide">
+    <div class="slide-header">
+      <span class="tag">Comparação</span>
+      <h2>Quando usar cada estratégia?</h2>
+    </div>
+
+    <p style="margin-bottom:20px;">Adaptado de <em>Wang &amp; Chen (2023), Table 2</em> — um guia prático para escolher a abordagem certa.</p>
+
+    <table>
+      <thead>
+        <tr>
+          <th>Critério</th>
+          <th>Feature Extraction</th>
+          <th>Fine-Tuning</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>Tamanho do dataset alvo</td>
+          <td class="good">Pequeno (&lt; 5k amostras)</td>
+          <td class="good">Médio/Grande (&gt; 10k)</td>
+        </tr>
+        <tr>
+          <td>Similaridade com fonte</td>
+          <td><span class="badge blue">Alta</span> (ex.: outras imagens naturais)</td>
+          <td><span class="badge green">Baixa–Alta</span> (qualquer)</td>
+        </tr>
+        <tr>
+          <td>Tempo de treinamento</td>
+          <td class="good">Muito rápido (minutos)</td>
+          <td class="bad">Lento (horas)</td>
+        </tr>
+        <tr>
+          <td>Risco de overfitting</td>
+          <td class="good">Baixo</td>
+          <td class="bad">Alto (sem regularização)</td>
+        </tr>
+        <tr>
+          <td>Capacidade de adaptação</td>
+          <td class="bad">Limitada</td>
+          <td class="good">Alta</td>
+        </tr>
+        <tr>
+          <td>Recursos computacionais</td>
+          <td class="good">CPU suficiente</td>
+          <td class="bad">GPU recomendada</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <div class="slide-footer">
+      <span>Transfer Learning — ENG4502</span>
+      <span>Comparação</span>
+    </div>
+  </section>
+
+  <!-- ══════════════════════════════════════════ -->
+  <!-- SLIDE 8 — ARQUITETURA ResNet-18           -->
+  <!-- ══════════════════════════════════════════ -->
+  <section class="slide">
+    <div class="slide-header">
+      <span class="tag">Modelo</span>
+      <h2>O modelo pré-treinado: ResNet-18</h2>
+    </div>
+
+    <div class="two-col left-wide">
+      <div>
+        <ul class="list">
+          <li>
+            <span class="bullet">📐</span>
+            <div>
+              <strong>Arquitetura:</strong> 18 camadas convolucionais com <em>conexões residuais</em> (skip connections) — evitam o problema de gradiente desvanecente.
+            </div>
+          </li>
+          <li>
+            <span class="bullet green">🏋️</span>
+            <div>
+              <strong>Pré-treinado em ImageNet:</strong> 1,2 milhão de imagens e 1000 classes. O modelo já aprendeu representações visuais ricas e generalizáveis.
+            </div>
+          </li>
+          <li>
+            <span class="bullet orange">✂️</span>
+            <div>
+              <strong>Adaptação para CIFAR-10:</strong> Substituímos apenas a camada final (<code>fc</code>): de 1000 → 10 saídas.
+            </div>
+          </li>
+          <li>
+            <span class="bullet purple">🔒</span>
+            <div>
+              <strong>Congelamento:</strong> <code>requires_grad = False</code> em todos os parâmetros — somente a nova camada <code>fc</code> é treinada.
+            </div>
+          </li>
+        </ul>
+      </div>
+      <div style="display:flex; flex-direction:column; gap:14px;">
+        <div class="metric-box">
+          <div class="metric-val">11M</div>
+          <div class="metric-label">Parâmetros totais ResNet-18</div>
+        </div>
+        <div class="metric-box" style="border-color:rgba(63,185,80,.4);">
+          <div class="metric-val" style="color:var(--green)">5.1K</div>
+          <div class="metric-label">Parâmetros treináveis (apenas fc)<br>= 512 × 10 + 10 bias</div>
+        </div>
+        <div class="metric-box" style="border-color:rgba(247,129,102,.4);">
+          <div class="metric-val" style="color:var(--orange)">~8min</div>
+          <div class="metric-label">Tempo estimado em CPU (5 épocas)</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="slide-footer">
+      <span>Transfer Learning — ENG4502</span>
+      <span>ResNet-18</span>
+    </div>
+  </section>
+
+  <!-- ══════════════════════════════════════════ -->
+  <!-- SLIDE 9 — PIPELINE PASSO A PASSO          -->
+  <!-- ══════════════════════════════════════════ -->
+  <section class="slide">
+    <div class="slide-header">
+      <span class="tag green">Pipeline</span>
+      <h2>Do dado ao modelo: passo a passo</h2>
+    </div>
+
+    <ul class="list">
+      <li>
+        <span class="bullet">1</span>
+        <div>
+          <strong>Dados</strong> — Carregar CIFAR-10 com <code>torchvision.datasets.CIFAR10</code>. Aplicar transforms: resize para 224×224 (input do ResNet), normalização.
+        </div>
+      </li>
+      <li>
+        <span class="bullet">2</span>
+        <div>
+          <strong>Modelo</strong> — Instanciar ResNet-18 com pesos do ImageNet (<code>ResNet18_Weights.IMAGENET1K_V1</code>). Congelar backbone, trocar camada final.
+        </div>
+      </li>
+      <li>
+        <span class="bullet green">3</span>
+        <div>
+          <strong>Treinamento</strong> — Usar <code>SGD</code> (lr=0.01, momentum=0.9) apenas sobre os parâmetros da camada final. Loop de 5 épocas.
+        </div>
+      </li>
+      <li>
+        <span class="bullet orange">4</span>
+        <div>
+          <strong>Avaliação</strong> — Calcular acurácia no conjunto de validação a cada época. Plotar curva de loss. Gerar matriz de confusão.
+        </div>
+      </li>
+      <li>
+        <span class="bullet purple">5</span>
+        <div>
+          <strong>Análise</strong> — Comparar resultado com treino <em>do zero</em>. Discutir: o que muda se descongelarmos algumas camadas?
+        </div>
+      </li>
+    </ul>
+
+    <div class="slide-footer">
+      <span>Transfer Learning — ENG4502</span>
+      <span>Pipeline</span>
+    </div>
+  </section>
+
+  <!-- ══════════════════════════════════════════ -->
+  <!-- SLIDE 10 — CÓDIGO PRINCIPAL               -->
+  <!-- ══════════════════════════════════════════ -->
+  <section class="slide">
+    <div class="slide-header">
+      <span class="tag orange">Código</span>
+      <h2>Implementação em PyTorch</h2>
+    </div>
+
+    <pre><span class="kw">import</span> torch, torch.nn <span class="kw">as</span> nn, torch.optim <span class="kw">as</span> optim
+<span class="kw">from</span> torchvision <span class="kw">import</span> datasets, transforms, models
+
+<span class="cmt"># ── 1. Transformações ────────────────────────────────────────</span>
+transform = transforms.<span class="fn">Compose</span>([
+    transforms.<span class="cls">Resize</span>(<span class="num">224</span>),                      <span class="cmt"># ResNet espera 224×224</span>
+    transforms.<span class="cls">ToTensor</span>(),
+    transforms.<span class="cls">Normalize</span>((<span class="num">0.5</span>,<span class="num">0.5</span>,<span class="num">0.5</span>), (<span class="num">0.5</span>,<span class="num">0.5</span>,<span class="num">0.5</span>))
+])
+
+<span class="cmt"># ── 2. Dataset e DataLoader ──────────────────────────────────</span>
+train_ds = datasets.<span class="cls">CIFAR10</span>(<span class="str">'data'</span>, train=<span class="kw">True</span>,  download=<span class="kw">True</span>, transform=transform)
+val_ds   = datasets.<span class="cls">CIFAR10</span>(<span class="str">'data'</span>, train=<span class="kw">False</span>, download=<span class="kw">True</span>, transform=transform)
+train_loader = torch.utils.data.<span class="fn">DataLoader</span>(train_ds, batch_size=<span class="num">128</span>, shuffle=<span class="kw">True</span>)
+val_loader   = torch.utils.data.<span class="fn">DataLoader</span>(val_ds,   batch_size=<span class="num">128</span>)
+
+<span class="cmt"># ── 3. Modelo pré-treinado + adaptação ──────────────────────</span>
+model = models.<span class="fn">resnet18</span>(weights=models.<span class="cls">ResNet18_Weights</span>.IMAGENET1K_V1)
+<span class="kw">for</span> p <span class="kw">in</span> model.<span class="fn">parameters</span>():
+    p.requires_grad = <span class="kw">False</span>            <span class="cmt"># ← congela backbone (feature extraction)</span>
+model.fc = nn.<span class="cls">Linear</span>(model.fc.in_features, <span class="num">10</span>)  <span class="cmt"># ← 10 classes CIFAR-10</span>
+
+<span class="cmt"># ── 4. Treinamento ───────────────────────────────────────────</span>
+optimizer = optim.<span class="cls">SGD</span>(model.fc.<span class="fn">parameters</span>(), lr=<span class="num">0.01</span>, momentum=<span class="num">0.9</span>)
+criterion = nn.<span class="cls">CrossEntropyLoss</span>()</pre>
+
+    <div class="slide-footer">
+      <span>Transfer Learning — ENG4502</span>
+      <span>Código</span>
+    </div>
+  </section>
+
+  <!-- ══════════════════════════════════════════ -->
+  <!-- SLIDE 11 — MÉTRICAS (ICD-04)              -->
+  <!-- ══════════════════════════════════════════ -->
+  <section class="slide">
+    <div class="slide-header">
+      <span class="tag yellow">Avaliação</span>
+      <h2>Métricas de avaliação — relembrar ICD-04</h2>
+    </div>
+
+    <p style="margin-bottom:24px;">As mesmas métricas de classificação que você já viu em <strong>ICD-04</strong> são aplicadas aqui diretamente.</p>
+
+    <div class="card-grid cols-3">
+      <div class="card accent">
+        <div class="card-icon">🎯</div>
+        <h3>Acurácia (Top-1)</h3>
+        <hr class="divider">
+        <p>Proporção de previsões corretas sobre o total de amostras.</p>
+        <p style="margin-top:10px; font-family:'JetBrains Mono'; font-size:12px; color:var(--accent);">acc = corretos / total</p>
+      </div>
+      <div class="card green">
+        <div class="card-icon">📋</div>
+        <h3>Matriz de Confusão</h3>
+        <hr class="divider">
+        <p>Mostra <em>quais</em> classes o modelo confunde. Essencial para análise de erros.</p>
+      </div>
+      <div class="card purple">
+        <div class="card-icon">📉</div>
+        <h3>Curva de Loss</h3>
+        <hr class="divider">
+        <p>Acompanha convergência do treinamento. Identifica overfitting cedo.</p>
+      </div>
+    </div>
+
+    <div class="info-strip" style="margin-top:20px;">
+      📌 <strong>Resultado esperado:</strong> Feature Extraction com ResNet-18 em CIFAR-10 atinge <strong>~72-78% de acurácia em 5 épocas</strong>. Compare isso com treinar uma CNN do zero: ~55-60% nas mesmas condições.
+    </div>
+
+    <div class="slide-footer">
+      <span>Transfer Learning — ENG4502</span>
+      <span>Métricas</span>
+    </div>
+  </section>
+
+  <!-- ══════════════════════════════════════════ -->
+  <!-- SLIDE 12 — LIMITAÇÕES E CUIDADOS          -->
+  <!-- ══════════════════════════════════════════ -->
+  <section class="slide">
+    <div class="slide-header">
+      <span class="tag orange">Cuidados</span>
+      <h2>Limitações e riscos do Transfer Learning</h2>
+    </div>
+
+    <div class="card-grid cols-2">
+      <div class="card orange">
+        <div class="card-icon">⚠️ Negative Transfer</div>
+        <hr class="divider">
+        <p>Quando o domínio fonte é <strong>muito diferente</strong> do alvo, o modelo pré-treinado pode prejudicar o aprendizado. Ex.: usar ResNet (imagens naturais) para diagnóstico por raio-X sem fine-tuning cuidadoso.</p>
+      </div>
+      <div class="card orange">
+        <div class="card-icon">⚠️ Domain Shift</div>
+        <hr class="divider">
+        <p>A distribuição dos dados fonte e alvo é diferente. As features aprendidas podem não generalizar bem para o novo domínio.</p>
+      </div>
+      <div class="card">
+        <div class="card-icon">📏 Tamanho do Modelo</div>
+        <hr class="divider">
+        <p>Modelos grandes como ResNet-50, VGG-16 ou ViT podem ser pesados demais para deploy em dispositivos embarcados ou com restrições de memória.</p>
+      </div>
+      <div class="card">
+        <div class="card-icon">⚖️ Viés do Modelo</div>
+        <hr class="divider">
+        <p>O modelo pré-treinado pode carregar vieses do dataset fonte (ex.: ImageNet tem sub-representação de grupos demográficos). Importante avaliar equidade.</p>
+      </div>
+    </div>
+
+    <div class="slide-footer">
+      <span>Transfer Learning — ENG4502</span>
+      <span>Limitações</span>
+    </div>
+  </section>
+
+  <!-- ══════════════════════════════════════════ -->
+  <!-- SLIDE 13 — DISCUSSÃO EM TURMA             -->
+  <!-- ══════════════════════════════════════════ -->
+  <section class="slide">
+    <div class="slide-header">
+      <span class="tag purple">Discussão</span>
+      <h2>Vamos pensar juntos?</h2>
+    </div>
+
+    <ul class="list">
+      <li>
+        <span class="bullet" style="font-size:18px;">💬</span>
+        <div>
+          Você recebeu um dataset médico com 500 imagens de lesões de pele (benigna vs. maligna). Você usaria Feature Extraction ou Fine-Tuning? Por quê? Quais cuidados tomaria?
+        </div>
+      </li>
+      <li>
+        <span class="bullet green" style="font-size:18px;">💬</span>
+        <div>
+          Por que o ResNet-18 pré-treinado em ImageNet consegue classificar CIFAR-10 bem, mesmo que ImageNet tenha classes como "barco" e "elefante" que não existem no CIFAR-10?
+        </div>
+      </li>
+      <li>
+        <span class="bullet orange" style="font-size:18px;">💬</span>
+        <div>
+          Em quais situações seria mais vantajoso treinar um modelo <strong>do zero</strong> do que usar Transfer Learning?
+        </div>
+      </li>
+      <li>
+        <span class="bullet purple" style="font-size:18px;">💬</span>
+        <div>
+          No contexto de Engenharia de Produção: que tipos de problemas industriais poderiam se beneficiar de Transfer Learning? (Ex.: detecção de defeitos em linha de produção)
+        </div>
+      </li>
+    </ul>
+
+    <div class="slide-footer">
+      <span>Transfer Learning — ENG4502</span>
+      <span>Discussão</span>
+    </div>
+  </section>
+
+  <!-- ══════════════════════════════════════════ -->
+  <!-- SLIDE 14 — ROTEIRO DA PRÁTICA             -->
+  <!-- ══════════════════════════════════════════ -->
+  <section class="slide">
+    <div class="slide-header">
+      <span class="tag green">Prática</span>
+      <h2>Roteiro da 2ª hora — mão na massa</h2>
+    </div>
+
+    <ul class="list">
+      <li>
+        <span class="bullet">1</span>
+        <div>
+          <strong>Abrir o notebook</strong> — <code>notebooks/01_feature_extraction_cifar10.ipynb</code>. Cada célula é comentada e explica o que está acontecendo.
+        </div>
+      </li>
+      <li>
+        <span class="bullet">2</span>
+        <div>
+          <strong>Rodar o treinamento</strong> — Execute as células em ordem. O download do CIFAR-10 e do ResNet-18 acontece automaticamente (~170 MB).
+        </div>
+      </li>
+      <li>
+        <span class="bullet green">3</span>
+        <div>
+          <strong>Observar as métricas</strong> — Acompanhe a loss e a acurácia a cada época. Compare com o esperado (~72-78% em 5 épocas).
+        </div>
+      </li>
+      <li>
+        <span class="bullet orange">4</span>
+        <div>
+          <strong>Experimentar</strong> — O que acontece se você mudar o learning rate? E se usar 10 épocas? E se descongelar as últimas 2 camadas?
+        </div>
+      </li>
+      <li>
+        <span class="bullet purple">5</span>
+        <div>
+          <strong>Analisar erros</strong> — Gere a matriz de confusão. Quais classes o modelo confunde mais? Por que você acha que isso acontece?
+        </div>
+      </li>
+    </ul>
+
+    <div class="slide-footer">
+      <span>Transfer Learning — ENG4502</span>
+      <span>Roteiro da Prática</span>
+    </div>
+  </section>
+
+  <!-- ══════════════════════════════════════════ -->
+  <!-- SLIDE 15 — REFERÊNCIAS                    -->
+  <!-- ══════════════════════════════════════════ -->
+  <section class="slide">
+    <div class="slide-header">
+      <span class="tag">Referências</span>
+      <h2>Leituras e recursos</h2>
+    </div>
+
+    <div class="card-grid cols-2">
+      <div class="card accent">
+        <div class="card-icon">📘</div>
+        <h3>Livro principal</h3>
+        <hr class="divider">
+        <p>Wang, Y., &amp; Chen, X. (2023). <em>Introduction to Transfer Learning: Algorithms and Practice</em>. Springer. — Base teórica desta aula.</p>
+      </div>
+      <div class="card green">
+        <div class="card-icon">🌐</div>
+        <h3>Tutorial PyTorch</h3>
+        <hr class="divider">
+        <p><em>Transfer Learning for Computer Vision Tutorial</em><br>pytorch.org/tutorials/beginner/transfer_learning_tutorial.html</p>
+      </div>
+      <div class="card purple">
+        <div class="card-icon">📄</div>
+        <h3>Artigo original ResNet</h3>
+        <hr class="divider">
+        <p>He, K. et al. (2016). <em>Deep Residual Learning for Image Recognition</em>. CVPR 2016.</p>
+      </div>
+      <div class="card">
+        <div class="card-icon">📊</div>
+        <h3>Slides da disciplina</h3>
+        <hr class="divider">
+        <p>ICD-00 a ICD-04 — Celecia, Veiga, Baião, Happ. Disponíveis na pasta <code>reference-slides-professora/</code>.</p>
+      </div>
+    </div>
+
+    <div class="slide-footer">
+      <span>Transfer Learning — ENG4502</span>
+      <span>Referências</span>
+    </div>
+  </section>
+
+</div><!-- /deck -->
+
+<script>
+  const slides = Array.from(document.querySelectorAll('.slide'));
+  const total  = slides.length;
+  let   cur    = 0;
+
+  const bar    = document.getElementById('progress-bar');
+  const num    = document.getElementById('slide-num');
+  const btnP   = document.getElementById('btn-prev');
+  const btnN   = document.getElementById('btn-next');
+
+  function show(idx) {
+    slides[cur].classList.remove('active');
+    cur = (idx + total) % total;
+    slides[cur].classList.add('active');
+    bar.style.width = ((cur + 1) / total * 100) + '%';
+    num.textContent  = (cur + 1) + ' / ' + total;
+    btnP.disabled    = cur === 0;
+    btnN.textContent = cur === total - 1 ? '✔ Fim' : 'Próximo →';
+  }
+
+  btnN.addEventListener('click', () => { if (cur < total - 1) show(cur + 1); });
+  btnP.addEventListener('click', () => { if (cur > 0) show(cur - 1); });
+
+  document.addEventListener('keydown', e => {
+    if (e.key === 'ArrowRight' || e.key === 'ArrowDown' || e.key === ' ') show(cur + 1);
+    if (e.key === 'ArrowLeft'  || e.key === 'ArrowUp')  show(cur - 1);
+  });
+
+  show(0);
+</script>
+</body>
+</html>

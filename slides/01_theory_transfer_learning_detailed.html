@@ -1,0 +1,172 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <title>Transfer Learning – Aula Teórica (Detalhada)</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <!-- Reveal.js core -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/reveal.js/4.5.0/reveal.min.css" integrity="sha512-8vY5p1E0RZJw2+qFvYw8j2J9R4v0dVgVQK8pO2vM+g4hVbV1K9O8jYcXfZcH3bM4E9hXqk2cG8gZJ+2Vf3dYg==" crossorigin="anonymous" referrerpolicy="no-referrer" />
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/reveal.js/4.5.0/theme/black.min.css" integrity="sha512-mZcWvIYc+JHhJfB6+L+9g3iA6cGgYcN6lG1pTgZg+4X+vK8hH6JfXgL9Yf+V0lA8J6eX+1t3YBzv9eF2kL5cA==" crossorigin="anonymous" referrerpolicy="no-referrer" />
+  <!-- Inter font -->
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+  <style>
+    body {font-family: 'Inter', sans-serif;}
+    .reveal .slides {background: linear-gradient(135deg, #1e0033, #0a0a2a);
+                     color: #e2e2e2;}
+    h2 {color: #00FFC8; font-weight: 600;}
+    .small {font-size: 0.8em; opacity: 0.8;}
+    .fragment {opacity: 0; transition: opacity 0.3s;}
+    .reveal .fragment.visible {opacity: 1;}
+    pre {background: #111; border-radius: 6px; padding: 0.8em; overflow-x: auto;}
+    code {color: #e6c07b;}
+    a {color: #89ddff;}
+    .quote {font-style: italic; opacity: 0.9; margin-top: 1em;}
+  </style>
+</head>
+<body>
+<div class="reveal">
+  <div class="slides">
+    <!-- Slide 1 – Título & Objetivo -->
+    <section>
+      <h2>Transfer Learning</h2>
+      <p><strong>Objetivo da aula (30 min)</strong></p>
+      <ul>
+        <li>Compreender o conceito de Transfer Learning.</li>
+        <li>Diferenciar <em>fine‑tuning</em> e <em>feature‑extraction</em>.</li>
+        <li>Aplicar o pipeline em um caso prático (CIFAR‑10).</li>
+      </ul>
+    </section>
+
+    <!-- Slide 2 – Definição formal (Livro) -->
+    <section>
+      <h2>Definição formal</h2>
+      <p>Transfer Learning = reutilização de <strong>representações aprendidas</strong> por um modelo pré‑treinado para resolver uma nova tarefa com <em>menos dados rotulados</em>.</p>
+      <p class="small quote">— Wang &amp; Chen (2023), <em>Introduction to Transfer Learning</em>, §1.2</p>
+    </section>
+
+    <!-- Slide 3 – Por que usar? (Motivações da disciplina) -->
+    <section>
+      <h2>Motivações pedagógicas (ICD‑00)</h2>
+      <ul>
+        <li>Reduz custo computacional – menos épocas, menos parâmetros a atualizar.</li>
+        <li>Menor necessidade de dados rotulados – essencial em cursos iniciais de IA.</li>
+        <li>Melhoria de performance quando o domínio da nova tarefa é semelhante ao domínio original (ex.: imagens).</li>
+      </ul>
+    </section>
+
+    <!-- Slide 4 – Taxonomia de estratégias -->
+    <section>
+      <h2>Estratégias de Transfer Learning</h2>
+      <ol>
+        <li><strong>Feature‑Extraction</strong>: congela todas as camadas exceto a última.</li>
+        <li><strong>Fine‑Tuning</strong>: descongela parte (ou todas) as camadas e continua o treinamento.</li>
+        <li><strong>Adapter‑Based</strong> (avançado): insere módulos leves entre camadas.</li>
+      </ol>
+      <p class="small">Tabela comparativa (Wang &amp; Chen, 2023, Table 2) – adaptável ao nível de graduação.</p>
+    </section>
+
+    <!-- Slide 5 – Pipeline típico (ICD‑04) -->
+    <section>
+      <h2>Pipeline típico</h2>
+      <ol>
+        <li>Selecionar modelo pré‑treinado (ex.: ResNet‑18, VGG‑16, BERT).</li>
+        <li>Adaptar a camada de saída ao número de classes da tarefa alvo.</li>
+        <li>Congelar ou descongelar camadas conforme a estratégia.</li>
+        <li>Treinar com o dataset alvo (geralmente < 10 épocas).</li>
+        <li>Validar e analisar métricas (acurácia, top‑k, matriz de confusão).</li>
+      </ol>
+      <p class="small">Ilustração inspirada em <em>ICD‑04 – Classificação + Métricas</em>.</p>
+    </section>
+
+    <!-- Slide 6 – Caso prático: CIFAR‑10 -->
+    <section>
+      <h2>Estudo de caso – CIFAR‑10</h2>
+      <ul>
+        <li>Dataset: 60 k imagens 32×32, 10 classes.</li>
+        <li>Modelo base: <strong>ResNet‑18</strong> pré‑treinado em ImageNet.</li>
+        <li>Estrategia: <em>feature‑extraction</em> (congelar todas as conv‑layers).</li>
+        <li>Hiper‑parâmetros sugeridos:
+          <ul>
+            <li>Batch = 128</li>
+            <li>Learning‑rate = 0.01, momentum = 0.9</li>
+            <li>Épocas = 5 (≈ 8 min em CPU típica de laboratório)</li>
+          </ul>
+        </li>
+        <li>Objetivo: demonstrar que a acurácia já ultrapassa 70 % sem fine‑tuning.</li>
+      </ul>
+    </section>
+
+    <!-- Slide 7 – Código resumido (Python / PyTorch) -->
+    <section>
+      <h2>Trecho de código (PyTorch)</h2>
+      <pre><code class="language-python">import torch, torch.nn as nn, torch.optim as optim
+from torchvision import datasets, transforms, models
+
+# 1️⃣ Transformações e carga dos dados
+transform = transforms.Compose([
+    transforms.Resize(224),
+    transforms.ToTensor(),
+    transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5))
+])
+train = datasets.CIFAR10('data', train=True, download=True, transform=transform)
+val   = datasets.CIFAR10('data', train=False, download=True, transform=transform)
+train_loader = torch.utils.data.DataLoader(train, batch_size=128, shuffle=True, num_workers=2)
+val_loader   = torch.utils.data.DataLoader(val,   batch_size=128, shuffle=False, num_workers=2)
+
+# 2️⃣ Modelo pré‑treinado + ajuste da camada final
+model = models.resnet18(weights=models.ResNet18_Weights.IMAGENET1K_V1)
+for p in model.parameters():
+    p.requires_grad = False            # feature‑extraction
+model.fc = nn.Linear(model.fc.in_features, 10)   # 10 classes
+model = model.to('cuda' if torch.cuda.is_available() else 'cpu')
+
+criterion = nn.CrossEntropyLoss()
+optimizer = optim.SGD(model.fc.parameters(), lr=0.01, momentum=0.9)
+</code></pre>
+      <p class="small">Para fine‑tuning, remova o bloqueio <code>requires_grad = False</code> nas últimas n camadas.</p>
+    </section>
+
+    <!-- Slide 8 – Métricas de avaliação -->
+    <section>
+      <h2>Métricas recomendadas (ICD‑04)</h2>
+      <ul>
+        <li><strong>Acurácia Top‑1</strong> – proporção de previsões corretas.</li>
+        <li><strong>Acurácia Top‑5</strong> – útil quando há classes visualmente semelhantes.</li>
+        <li><strong>Matriz de Confusão</strong> – analisa erros por classe.</li>
+        <li>Curvas de <em>loss</em> e <em>learning rate</em> ao longo das épocas.</li>
+      </ul>
+    </section>
+
+    <!-- Slide 9 – Perguntas de reflexão (nível graduação) -->
+    <section>
+      <h2>Discussão em turma</h2>
+      <ul>
+        <li>Quando o fine‑tuning pode ser mais vantajoso que feature‑extraction?</li>
+        <li>Quais são os riscos de aplicar um modelo pré‑treinado em domínios muito diferentes (ex.: imagens médicas vs. natural)?</li>
+        <li>Como escolher o modelo base considerando tamanho, profundidade e disponibilidade de pesos?</li>
+      </ul>
+    </section>
+
+    <!-- Slide 10 – Referências -->
+    <section>
+      <h2>Referências</h2>
+      <ul>
+        <li>Wang, Y., &amp; Chen, X. (2023). <em>Introduction to Transfer Learning: Algorithms and Practice</em>. Springer.</li>
+        <li>PyTorch Documentation – <a href="https://pytorch.org/tutorials/beginner/transfer_learning_tutorial.html" target="_blank">Transfer Learning Tutorial</a>.</li>
+        <li>Material da professora (ICD‑00 a ICD‑04) – PDFs na pasta <code>reference‑slides‑professora</code>.</li>
+      </ul>
+    </section>
+  </div>
+</div>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/reveal.js/4.5.0/reveal.min.js" integrity="sha512-6hF2qKZ+9Qp6e6Y1kZ2H5vY3bN0F7g3E9rK5cG4L8hDqK2eV6z5M9cZt7K8L9M0T3nF4J2E9bU1vY3R4S5W6Z==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+<script>
+  Reveal.initialize({
+    hash: true,
+    slideNumber: true,
+    transition: 'fade',
+    backgroundTransition: 'convex',
+    plugins: []
+  });
+</script>
+</body>
+</html>
