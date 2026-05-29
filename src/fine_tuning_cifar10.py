@@ -20,7 +20,7 @@ def train_one_epoch(model, loader, criterion, optimizer, device, epoch, num_epoc
     model.train()
     running_loss = 0.0
     pbar = tqdm(loader, desc=f'Época {epoch}/{num_epochs} [treino]',
-                unit='batch', ncols=90, colour='blue')
+                unit='batch', ncols=90, colour='green')
     for inputs, labels in pbar:
         inputs, labels = inputs.to(device), labels.to(device)
         optimizer.zero_grad()
@@ -39,7 +39,7 @@ def evaluate(model, loader, device, epoch, num_epochs):
     correct = 0
     total = 0
     pbar = tqdm(loader, desc=f'Época {epoch}/{num_epochs} [val]  ',
-                unit='batch', ncols=90, colour='green')
+                unit='batch', ncols=90, colour='blue')
     with torch.no_grad():
         for inputs, labels in pbar:
             inputs, labels = inputs.to(device), labels.to(device)
@@ -53,10 +53,9 @@ def evaluate(model, loader, device, epoch, num_epochs):
 if __name__ == "__main__":
 
     # ── Configuração do subset ─────────────────────────────────────────────
-    # Para a aula usamos um subconjunto balanceado para manter tempo < 5 min.
-    # Para treinar com o dataset completo, altere N_TRAIN e N_VAL para None.
-    N_TRAIN = 5_000   # ← 10% do dataset completo (50.000); mude para None para usar tudo
-    N_VAL   = 1_000   # ← 10% da validação (10.000);        mude para None para usar tudo
+    # IDÊNTICO aos anteriores para comparação justa.
+    N_TRAIN = 5_000
+    N_VAL   = 1_000
 
     # ── Transformações ──────────────────────────────────────────────────────
     transform = transforms.Compose([
@@ -68,8 +67,7 @@ if __name__ == "__main__":
     train_full = datasets.CIFAR10(root='data', train=True,  download=True, transform=transform)
     val_full   = datasets.CIFAR10(root='data', train=False, download=True, transform=transform)
 
-    # Subset balanceado: 500 amostras por classe (10 classes × 500 = 5.000)
-    # Garantia de que todas as classes estão representadas igualmente
+    # Subset balanceado: 500 amostras por classe
     def balanced_subset(dataset, n_total):
         if n_total is None:
             return dataset
@@ -90,11 +88,13 @@ if __name__ == "__main__":
     train_loader = torch.utils.data.DataLoader(train_dataset, batch_size=64, shuffle=True,  num_workers=0)
     val_loader   = torch.utils.data.DataLoader(val_dataset,   batch_size=64, shuffle=False, num_workers=0)
 
-    # ── Modelo pré-treinado (ResNet-18) — Feature Extraction ───────────────
+    # ── Modelo com Fine-Tuning ──────────────────────────────────────────────
+    # DIFERENÇA 1: Iniciamos com os pesos pré-treinados do ImageNet
     model = models.resnet18(weights=models.ResNet18_Weights.IMAGENET1K_V1)
-    for param in model.parameters():
-        param.requires_grad = False          # congela backbone
-    model.fc = nn.Linear(model.fc.in_features, 10)   # 10 classes CIFAR-10
+    
+    # DIFERENÇA 2: NÃO congelamos os parâmetros. Deixamos requires_grad = True (padrão)
+    # permitindo que toda a rede se adapte aos novos dados de CIFAR-10.
+    model.fc = nn.Linear(model.fc.in_features, 10)
 
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
     model  = model.to(device)
@@ -104,16 +104,20 @@ if __name__ == "__main__":
     n_val_eff   = len(val_dataset)
 
     print(f'\nDispositivo          : {device}')
-    print(f'Parâmetros treináveis: {trainable:,} (apenas camada fc)')
+    print(f'Parâmetros treináveis: {trainable:,} (TODOS - Fine-tuning)')
     print(f'Amostras de treino   : {n_train_eff:,} (subset balanceado, {n_train_eff//10}/classe)')
     print(f'Amostras de validação: {n_val_eff:,}')
     print()
     print('=' * 60)
-    print(' Feature Extraction — CIFAR-10 com ResNet-18 (5 épocas)')
+    print(' Fine-Tuning — CIFAR-10 com ResNet-18 (5 épocas)')
+    print(' 🚀 Pesos pré-treinados, ajuste fino de TODAS as camadas')
     print('=' * 60)
 
     criterion = nn.CrossEntropyLoss()
-    optimizer = optim.SGD(model.fc.parameters(), lr=0.01, momentum=0.9)
+    
+    # DIFERENÇA 3: Usamos uma taxa de aprendizado menor (lr=0.001) para não destruir
+    # os pesos pré-treinados úteis já aprendidos no ImageNet.
+    optimizer = optim.SGD(model.parameters(), lr=0.001, momentum=0.9)
 
     # ── Loop de treinamento ─────────────────────────────────────────────────
     num_epochs = 5
@@ -132,5 +136,8 @@ if __name__ == "__main__":
     print(f' Acurácia final de validação: {acc:.4f} ({acc*100:.1f}%)')
     print('=' * 60)
     print()
-    print('NOTA: Este script usa um subset de 5.000 amostras para fins didáticos.')
-    print('      Para treinar com o dataset completo (50.000), altere N_TRAIN=None e N_VAL=None.')
+    print('COMPARAÇÃO ESPERADA:')
+    print('  Feature Extraction (Transfer Learning) → ~74.5%')
+    print('  Treinamento do zero                    → ~30-40%')
+    print(f'  Fine-Tuning (este script)              → {acc*100:.1f}%')
+    print()
