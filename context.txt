@@ -1,0 +1,12 @@
+# Contexto do Projeto Transfer Learning Class
+
+Este repositório contém a fundação da aula de **Transfer Learning** de 2 horas para alunos de graduação em Ciência de Dados da Engenharia de Produção da PUC‑Rio. Nesta fase inicial, definimos a estrutura de diretórios, arquivos de descrição e instruções, além de arquivos de configuração básicos.
+
+*Objetivo geral:* preparar o material didático (teoria e prática) baseado no livro "Introduction to Transfer Learning: Algorithms and Practice" (Wang & Chen, 2023).
+
+## Objetivos de Aprendizagem Específicos
+- Compreender o conceito de **transfer learning** e diferenciar **fine‑tuning** de **feature‑extraction**.
+- Identificar etapas de um pipeline de transferência de conhecimento (pré‑processamento, treinamento, avaliação).
+- Aplicar algoritmos de classificação e clustering em datasets de exemplo usando `scikit‑learn` e `torch`.
+- Avaliar modelos com métricas adequadas (accuracy, f1‑score, silhouette, RMSE) e interpretar os resultados.
+- Desenvolver pequenos notebooks que reproduzam experimentos descritos nos slides da professora.

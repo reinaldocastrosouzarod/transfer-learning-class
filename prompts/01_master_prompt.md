@@ -39,3 +39,58 @@ Você é um agente autônomo responsável por gerar todo o material de uma aula 
 - Produzir um **Plano B** (ex.: usar dataset ainda menor ou um modelo mais leve) caso o tempo exceda.
 
 > **Objetivo final**: entregar um repositório completo, pronto para ser clonado e usado em sala de aula, com material coerente, pedagogicamente sólido e tecnicamente executável.
+
+### MATERIAL DE REFERÊNCIA DA PROFESSORA (OBRIGATÓRIO)
+
+Localização dos arquivos:
+  reference-slides-professora/
+
+Arquivos disponíveis:
+arquivos de slides que estiverem nesta pasta
+
+Objetivo deste material:
+Os slides da professora servem apenas como MOLDE VISUAL e PEDAGÓGICO para a sua apresentação.
+Eles NÃO são a fonte principal de conceitos.
+
+O que você DEVE fazer com este material:
+
+1. Ler e analisar os slides da professora para extrair:
+   - estilo visual (cores, fontes, layout, densidade de texto, uso de diagramas/imagens);
+   - nível de formalismo e profundidade esperada;
+   - padrão de organização dos tópicos (abertura, agenda, desenvolvimento, exemplos, fechamento);
+   - convenções locais da disciplina (ex: como ela introduz conceitos, como fecha aulas).
+
+2. Usar esse estilo como GUIA para criar seus próprios slides sobre Transfer Learning:
+   - Recrie o conteúdo teórico COM BASE NO LIVRO de Wang & Chen (2023).
+   - Adapte o ESTILO VISUAL e a ESTRUTURA DIDÁTICA ao padrão da professora.
+   - Mantenha a mesma densidade de texto por slide, mesmo padrão de títulos/subtítulos,
+     mesmo uso de boxes, diagramas e exemplos típicos.
+
+3. Produzir o arquivo md/03_slides_aula.md com:
+   - conteúdo completo de cada slide (título, subtítulo, bullets, notas do apresentador);
+   - pelo menos 1 slide comparando: TL vs treinamento do zero vs fine-tuning vs domain adaptation;
+   - pelo menos 1 slide sobre negative transfer;
+   - pelo menos 1 slide com workflow visual "quando usar TL";
+   - transições conceituais claras entre os tópicos.
+
+O que você NÃO deve fazer:
+
+- NÃO usar os slides da professora como fonte principal de conceitos.
+- NÃO copiar trechos longos literalmente dos slides da professora.
+- NÃO reutilizar exemplos específicos da professora sem adaptá-los ao contexto de Transfer Learning e ao nível da turma.
+- NÃO gerar os slides finais em PPTX agora; apenas o conteúdo teórico em md/03_slides_aula.md.
+- NÃO alterar o estilo visual para algo muito diferente do padrão da professora.
+
+Regra de ouro (PRIORIDADE):
+
+- Se houver conflito entre o livro de Wang & Chen e os slides da professora:
+  • CONCEITOS, DEFINIÇÕES e FUNDAMENTAÇÃO teórica → seguem o livro de Wang & Chen (2023).
+  • ESTILO VISUAL, ESTRUTURA DOS SLIDES e NÍVEL DE PROFUNDIDADE → seguem o padrão da professora.
+
+Fluxo obrigatório:
+
+1. Leia primeiro: README.md → prompts/00_system_context.md → prompts/02_acceptance_criteria.md.
+2. Em seguida, analise os slides na pasta reference-slides-professora/.
+3. Use os slides apenas para extrair o estilo visual e pedagógico.
+4. Gere o conteúdo teórico com base no livro.
+5. Produza md/03_slides_aula.md no estilo da professora, mas com conteúdo de Wang & Chen.

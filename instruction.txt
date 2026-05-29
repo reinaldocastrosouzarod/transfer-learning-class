@@ -1,0 +1,19 @@
+# Instruções de Desenvolvimento da Aula de Transfer Learning
+
+1. **Configuração do Ambiente**
+   - Instale as dependências listadas em `requirements.txt` com `pip install -r requirements.txt`.
+2. **Estrutura de Código**
+   - Todo script Python deve estar dentro da pasta `src/`.
+   - Use nomes claros e snake_case.
+3. **Documentação**
+   - Atualize a pasta `docs/` com arquivos Markdown que descrevam o plano da aula e referências.
+4. **Notebooks de Prática**
+   - Crie notebooks em `notebooks/` contendo exemplos de transfer learning simples e comentados.
+5. **Slides**
+   - Slides da parte teórica devem ser desenvolvidos em `slides/` usando Markdown ou PowerPoint.
+6. **Testes**
+   - Se houver código funcional, adicione testes em `tests/` usando `pytest`.
+7. **Commit e Versionamento**
+   - Use mensagens de commit claras (`feat:`, `docs:`, `fix:`) e siga o fluxo Git padrão.
+
+_Esta é a base de instruções para iniciar o desenvolvimento da aula._
