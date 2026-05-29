@@ -151,3 +151,61 @@ Ao iniciar um projeto de visão computacional na Engenharia de Produção, utili
 2.  **Otimização e Configuração:**
     *   No **Fine-tuning**, certifique-se de que a taxa de aprendizado é pequena ($10^{-3}$ ou $10^{-4}$).
     *   Sempre aplique as transformações e normalizações exatas do modelo de origem. A ResNet-18 exige redimensionar para $224\times224$ pixels e normalizar com a média `[0.485, 0.456, 0.406]` e desvio padrão `[0.229, 0.224, 0.225]`.
+
+---
+
+## 8. Guia de Sobrevivência & Depuração (PyTorch)
+
+Ao implementar redes convolucionais profundas com PyTorch, é comum encontrar alguns problemas operacionais e lógicos. Abaixo estão os erros mais frequentes vivenciados por alunos e engenheiros, e como resolvê-los.
+
+### 8.1. Travamento de Multiprocessamento no Windows
+*   **Sintoma:** O programa trava no início do carregamento de dados, entra em um loop infinito abrindo dezenas de novos terminais/processos de Python ou consome 100% de CPU sem progresso.
+*   **Causa:** O Windows não suporta o método de cópia de memória `fork` do Unix. Ele utiliza o método `spawn`, o que faz com que cada processo worker tente reexecutar todo o script desde o início.
+*   **Solução:** 
+    1. Sempre defina `num_workers = 0` nos `DataLoader` para executar de forma síncrona na thread principal durante o desenvolvimento ou demonstrações em Windows.
+    2. Caso precise de multiprocessing, sempre envolva o ponto de entrada do seu script em:
+       ```python
+       if __name__ == '__main__':
+           # Seu código principal aqui
+       ```
+
+### 8.2. Esquecimento do Modo de Avaliação (`model.eval()`)
+*   **Sintoma:** O modelo apresenta excelente acurácia no treino, mas ao avaliar no dataset de validação, o desempenho cai dramaticamente ou varia aleatoriamente entre batches.
+*   **Causa:** Algumas camadas, como `BatchNorm2d` e `Dropout`, comportam-se de formas opostas no treino e no teste. Sem `.eval()`, o `BatchNorm` continuará atualizando suas estatísticas móveis (média e variância) usando os dados do batch de validação (que costuma ser pequeno ou não-embaralhado), distorcendo as predições.
+*   **Solução:** Sempre declare explicitamente a fase antes dos loops:
+    ```python
+    # Antes do loop de treino:
+    model.train()
+
+    # Antes do loop de validação/inferência:
+    model.eval()
+    ```
+
+### 8.3. Erro de Incompatibilidade de Dimensão (Size Mismatch)
+*   **Sintoma:** `RuntimeError: size mismatch for self, m1: [...], m2: [...]` no início da execução da camada totalmente conectada (`model.fc`).
+*   **Causa:** Redes convolucionais como a ResNet-18 pré-treinadas no ImageNet esperam imagens de entrada de resolução $224 \times 224$ pixels. Imagens do CIFAR-10 são nativamente de tamanho $32 \times 32$. Se passadas sem redimensionar, o tensor de entrada chega menor do que o esperado na camada totalmente conectada final.
+*   **Solução:** Aplique sempre o redimensionamento no pipeline de transformações do seu dataset:
+    ```python
+    transform = transforms.Compose([
+        transforms.Resize(224), # Redimensiona 32x32 para 224x224
+        transforms.ToTensor(),
+        transforms.Normalize((0.485, 0.456, 0.406), (0.229, 0.224, 0.225))
+    ])
+    ```
+
+### 8.4. Estouro de Memória do Sistema ou de Vídeo (OOM - Out of Memory)
+*   **Sintoma:** O computador começa a travar após algumas épocas ou o PyTorch acusa `CUDA out of memory`.
+*   **Causa:** Acúmulo do grafo de computação do autograd na memória RAM. Por exemplo, salvar a perda histórica fazendo `historico_loss.append(loss)` acumula todo o grafo do PyTorch de cada batch para sempre, impedindo o coletor de lixo de liberar a memória.
+*   **Solução:**
+    1. Use `.item()` para converter tensores de métricas em números nativos do Python:
+       ```python
+       # Incorreto: historico.append(loss)
+       # Correto:
+       historico.append(loss.item())
+       ```
+    2. Sempre envolva o loop de validação com o decorador de contexto do PyTorch para desativar o cálculo de gradiente:
+       ```python
+       with torch.no_grad():
+           for inputs, labels in val_loader:
+               outputs = model(inputs)
+       ```
