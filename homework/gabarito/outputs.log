@@ -1,0 +1,28 @@
+============================================================
+ EXECUÇÃO DO GABARITO DO DEVER DE CASA — TRANSFER LEARNING
+============================================================
+Dispositivo detectado: cpu
+Treino: 5000 imagens | Validação: 1000 imagens
+
+============================================================
+ PARTE A: Treinamento do Zero (Scratch) com Augmentation
+============================================================
+[INFO] Pesos do Scratch ja encontrados. Carregando e pulando treino da Parte A...
+[OK] Checkpoint do Scratch salvo em: homework/gabarito/best_scratch.pt
+
+============================================================
+ PARTE B: Fine-Tuning Parcial (layer4 + fc)
+============================================================
+Total Parâmetros: 11,181,642 | Treináveis: 8,398,858
+Época 1/5 | Loss: 1.9413 | Val Acc: 53.70% | Tempo: 175.5s
+Época 2/5 | Loss: 1.3315 | Val Acc: 64.50% | Tempo: 176.2s
+Época 3/5 | Loss: 1.0577 | Val Acc: 69.70% | Tempo: 178.1s
+Época 4/5 | Loss: 0.9082 | Val Acc: 73.90% | Tempo: 178.2s
+Época 5/5 | Loss: 0.8380 | Val Acc: 75.40% | Tempo: 176.5s
+[OK] Checkpoint do Fine-Tuning Parcial salvo em: homework/gabarito/best_partial.pt
+
+[OK] Gráfico comparativo salvo em: homework/gabarito/curvas_homework.png
+
+============================================================
+ FIM DO PROCESSAMENTO DO GABARITO
+============================================================
